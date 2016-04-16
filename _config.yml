@@ -1,0 +1,34 @@
+# Dependencies
+markdown:            redcarpet
+highlighter:         pygments
+
+# Permalinks
+#
+# Use of `relative_permalinks` ensures post links from the index work properly.
+permalink:           /:title/
+relative_permalinks: true
+
+# Setup
+title:               水言木
+tagline:             '做一个真正的blogger'
+description:         '水言木'
+url:                 http://blog.mouhong.me
+baseurl:             /
+paginate:            5
+
+# Comments
+comments:
+  enabled:			 true
+  disqus_shortname:	 'mouhong'
+
+# Analytics
+analytics:
+  enabled:			 true
+  baidu_siteid:		 '58248cc329eeaca2b1acb2d478f0fc2a'
+
+# About/contact
+author:
+  name:              Mouhong
+  weibo:               http://weibo.com/linmouhong
+  email:             dylan.lin@live.com
+  github:		     https://github.com/mouhong

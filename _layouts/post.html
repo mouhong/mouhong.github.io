@@ -1,0 +1,18 @@
+---
+layout: default
+---
+
+<div class="post">
+  <h1 class="post-title">{{ page.title }}</h1>
+  <span class="post-date">{{ page.date | date_to_string }}</span>
+  {{ content }}
+  <blockquote>
+    本博客托管于<a target="_blank" href="https://gitcafe.com/mouhong/mouhong/tree/gitcafe-pages/_posts">GitCafe</a>，如发现错误，或觉得某些地方用其它方式来说明更通俗易懂，欢迎向我提交<a target="_blank" href="https://gitcafe.com/mouhong/mouhong/tree/gitcafe-pages/{{ page.path }}">Pull Request</a>。
+  </blockquote>
+</div>
+
+{% include series.html %}
+
+{% if site.comments.enabled %}
+{% include disqus.html %}
+{% endif %}
