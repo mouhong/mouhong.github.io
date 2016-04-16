@@ -4,7 +4,7 @@ title: C#字符串与编码 (下)
 tags: string, encoding, unicode
 ---
 
-[上一篇文章](/csharp-string-and-encoding-part-1/)我们介绍了Unicode，它定义了一个供全人类使用的字符集合以及各自对应的码位 (Code position / code point)，而 UTF-32 和 UTF-16 是两种编码形式 (Encoding forms)，它们负责把码位以不同的方式映射到各自的编码单元 (Code unit)，比如 UTF-32 将码位一一映射到其 4 字节的编码单元，而 UTF-16 将 0x0000 - 0xFFFF 之间的码位映射到其 2 字节的编码单元，但对 0xFFFF 之上的码位则映射到两个编码单元。
+[上一篇文章](/2015/05/18/csharp-string-and-encoding-part-1/)我们介绍了Unicode，它定义了一个供全人类使用的字符集合以及各自对应的码位 (Code position / code point)，而 UTF-32 和 UTF-16 是两种编码形式 (Encoding forms)，它们负责把码位以不同的方式映射到各自的编码单元 (Code unit)，比如 UTF-32 将码位一一映射到其 4 字节的编码单元，而 UTF-16 将 0x0000 - 0xFFFF 之间的码位映射到其 2 字节的编码单元，但对 0xFFFF 之上的码位则映射到两个编码单元。
 
 但事实上，除了 UTF-32 和 UTF-16，我们更耳熟能详的应该是 UTF-8。
 
@@ -15,13 +15,39 @@ UTF-8 应用非常广泛，即使是个刚入行的小白，也应该会经常�
 
 之所以这么流行，是因为 UTF-8 完全兼容 ASCII，对于 ASCII 字符，UTF-8 使用和 ASCII 完全一样的编码方式，同样只使用一个字节，这就意味着，如果被编码的字符仅含 ASCII 字符，那即使是用 UTF-8 进行编码，只支持 ASCII 的旧系统仍然能够准确地解码。同时，如果被编码的字符大部分是 ASCII 字符，因为只占用一个字节，UTF-8 也最节省空间。
 
-但有得必有失，对于其它字符，UTF-8 则需要采用二到四字节进行编码。```csharp// 输出 UTF-8: 3 bytesConsole.WriteLine(
-	"UTF-8: " + Encoding.UTF8.GetBytes("ABC").Length + " bytes");// 输出 UTF-16: 6 bytesConsole.WriteLine(
-	"UTF-16: " + Encoding.Unicode.GetBytes("ABC").Length + " bytes");// 输出 UTF-32: 12 bytesConsole.WriteLine(
-	"UTF-32: " + Encoding.UTF32.GetBytes("ABC").Length + " bytes");```上面的代码对比了三种编码对"ABC"进行编码的结果，UTF-8 只需要三字节。```csharp// 输出 UTF-8: 6 bytesConsole.WriteLine(
-	"UTF-8: " + Encoding.UTF8.GetBytes("我们").Length + " bytes");// 输出 UTF-16: 4 bytesConsole.WriteLine(
-	"UTF-16: " + Encoding.Unicode.GetBytes("我们").Length + " bytes");// 输出 UTF-32: 8 bytesConsole.WriteLine(
-	"UTF-32: " + Encoding.UTF32.GetBytes("我们").Length + " bytes");```上面的代码对比了三种编码分别对"我们"进行编码的结果，UTF-8 需要六字节，而 UTF-16 只需要 四字节。所以，如果大部分是中文字符，UTF-16 相对会更节省空间。而 UTF-32，无论哪种情况它基本上都是最差的，所以它应用不是很广泛，但它有一个好处是每个字符统一占用 4 字节，处理起来简单，所以在内存中使用时也可以看情况考虑 UTF-32。
+但有得必有失，对于其它字符，UTF-8 则需要采用二到四字节进行编码。
+
+```csharp
+// 输出 UTF-8: 3 bytes
+Console.WriteLine(
+	"UTF-8: " + Encoding.UTF8.GetBytes("ABC").Length + " bytes");
+
+// 输出 UTF-16: 6 bytes
+Console.WriteLine(
+	"UTF-16: " + Encoding.Unicode.GetBytes("ABC").Length + " bytes");
+
+// 输出 UTF-32: 12 bytes
+Console.WriteLine(
+	"UTF-32: " + Encoding.UTF32.GetBytes("ABC").Length + " bytes");
+```
+
+上面的代码对比了三种编码对"ABC"进行编码的结果，UTF-8 只需要三字节。
+
+```csharp
+// 输出 UTF-8: 6 bytes
+Console.WriteLine(
+	"UTF-8: " + Encoding.UTF8.GetBytes("我们").Length + " bytes");
+
+// 输出 UTF-16: 4 bytes
+Console.WriteLine(
+	"UTF-16: " + Encoding.Unicode.GetBytes("我们").Length + " bytes");
+
+// 输出 UTF-32: 8 bytes
+Console.WriteLine(
+	"UTF-32: " + Encoding.UTF32.GetBytes("我们").Length + " bytes");
+```
+
+上面的代码对比了三种编码分别对"我们"进行编码的结果，UTF-8 需要六字节，而 UTF-16 只需要 四字节。所以，如果大部分是中文字符，UTF-16 相对会更节省空间。而 UTF-32，无论哪种情况它基本上都是最差的，所以它应用不是很广泛，但它有一个好处是每个字符统一占用 4 字节，处理起来简单，所以在内存中使用时也可以看情况考虑 UTF-32。
 
 UTF-8 的编码单元是 8 位，是面向字节的 (Byte-oriented)，但具体的编码算法这里不做过多介绍，网上搜索一下会有很多相关内容。
 
@@ -76,7 +102,13 @@ UTF-8 的编码单元是 8 位，是面向字节的 (Byte-oriented)，但具体�
 现在我们通过 C# 来看一下，Int16 是不是真的像前面说的这样存储：
 
 ```csharp
-Int16 value = 31;byte[] bytes = BitConverter.GetBytes(value);Console.WriteLine("Little-endian: " + BitConverter.IsLittleEndian);Console.WriteLine(BitConverter.ToString(bytes));```
+Int16 value = 31;
+
+byte[] bytes = BitConverter.GetBytes(value);
+
+Console.WriteLine("Little-endian: " + BitConverter.IsLittleEndian);
+Console.WriteLine(BitConverter.ToString(bytes));
+```
 
 上面的代码在我的电脑上运行时会输出：
 
@@ -88,7 +120,14 @@ Little-endian: True
 这是因为我的机器用的是 Little-endian。如果你用的是 Big-endian 的机器，上面的字节数组就不是`[0x1F, 0x00]`，而是`[0x00, 0x1F]`，这时如果你把你机器上拿到的这个字节数组丢给我 (Little-endian)， 而我却不经处理地直接将它转成 Int16，得到的 Int16 值就不正确：
 
 ```csharp
-// 假设这是来自于 Bit-endian 的机器的字节数组，期望值是 31byte[] bytes = new byte[] { 0x00, 0x1F };// 在我 Little-endian 的机器上直接将它转成 Int16Int16 value = BitConverter.ToInt16(bytes, 0);// 输出结果Console.WriteLine(value);
+// 假设这是来自于 Bit-endian 的机器的字节数组，期望值是 31
+byte[] bytes = new byte[] { 0x00, 0x1F };
+
+// 在我 Little-endian 的机器上直接将它转成 Int16
+Int16 value = BitConverter.ToInt16(bytes, 0);
+
+// 输出结果
+Console.WriteLine(value);
 ```
 
 上面的代码在我的电脑上运行时会输出 7936，就不再是我们所期望的 31 了。
@@ -130,7 +169,16 @@ UTF-16 属于 Encoding Form，而 UTF-16BE 或 UTF-16LE 属于 Encoding Scheme�
 我们同样可以通过 C# 来验证一下：
 
 ```csharp
-// UTF-16 Little-endianvar utf16_LE = Encoding.Unicode;var littleEndianBytes = utf16_LE.GetBytes(str);Console.WriteLine(BitConverter.ToString(littleEndianBytes));// UTF-16 Big-endianvar utf16_BE = Encoding.BigEndianUnicode;var bigEndianBytes = utf16_BE.GetBytes(str);Console.WriteLine(BitConverter.ToString(bigEndianBytes));
+// UTF-16 Little-endian
+var utf16_LE = Encoding.Unicode;
+
+var littleEndianBytes = utf16_LE.GetBytes(str);
+Console.WriteLine(BitConverter.ToString(littleEndianBytes));
+
+// UTF-16 Big-endian
+var utf16_BE = Encoding.BigEndianUnicode;
+var bigEndianBytes = utf16_BE.GetBytes(str);
+Console.WriteLine(BitConverter.ToString(bigEndianBytes));
 ```
 
 上面的代码会输出：
@@ -161,14 +209,38 @@ UTF-8 的 BOM 永远都是 0xEFBBBF，这是因为 UTF-8 是 Byte-oriented 的�
 在 Windows 下，可以通过记事本来试验一下 BOM 是如何影响记事本程序对文件编码的理解的。
 
 ```csharp
-var filePath = "C:\\Work\\tmp.txt";var bytes = Encoding.Unicode.GetBytes("你好");// 将字节数组写入文件using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write)){    fs.Write(bytes, 0, bytes.Length);    fs.Flush();}```
+var filePath = "C:\\Work\\tmp.txt";
+
+var bytes = Encoding.Unicode.GetBytes("你好");
+
+// 将字节数组写入文件
+using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+{
+    fs.Write(bytes, 0, bytes.Length);
+    fs.Flush();
+}
+```
 
 运行上面的 C# 代码，然后在 Windows Explorer 中打开 tmp.txt，会发现我们看到的是乱码，这是因为我们用了 UTF-16LE，但没有将 BOM 写入到文件，所以记事本不知道文件是采用什么编码，所以它只好使用默认的编码打开，就变成乱码了。
 
 如果我们把 BOM 写入到文件中：
 
 ```csharp
-var filePath = "C:\\Work\\tmp.txt";var bytes = Encoding.Unicode.GetBytes("你好");// 将字节数组写入文件using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write)){    // 写入 BOM    byte[] bom = new byte[] { 0xFF, 0xFE };    fs.Write(bom, 0, bom.Length);    fs.Write(bytes, 0, bytes.Length);    fs.Flush();}```
+var filePath = "C:\\Work\\tmp.txt";
+
+var bytes = Encoding.Unicode.GetBytes("你好");
+
+// 将字节数组写入文件
+using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+{
+    // 写入 BOM
+    byte[] bom = new byte[] { 0xFF, 0xFE };
+    fs.Write(bom, 0, bom.Length);
+
+    fs.Write(bytes, 0, bytes.Length);
+    fs.Flush();
+}
+```
 
 这次再打开 tmp.txt 就会正常地看到“你好”了。这说明记事本在打开文本文件时，是会先检查 BOM 的。
 

@@ -7,20 +7,31 @@ series: .NET Memory Management
 
 ## Dispose 模式 ##
 
-[上一篇](/dotnet-memory-management-part-3-finalizer/)文章中我们说过，Finalizer 是“最后一道防线”，但我们不能依赖它去释放非托管资源，因为 Finalizer 的执行时机是不确定的。如果我们分配了非托管资源，要及时手工释放。现在轮到 Dispose 模式上场了，这个模式很重要，因为它和语言是紧密结合的，例如在 C# 中 using 块结束时会自动调用相关对象的`Dispose`方法。
+[上一篇](/2015/06/13/dotnet-memory-management-part-3-finalizer/)文章中我们说过，Finalizer 是“最后一道防线”，但我们不能依赖它去释放非托管资源，因为 Finalizer 的执行时机是不确定的。如果我们分配了非托管资源，要及时手工释放。现在轮到 Dispose 模式上场了，这个模式很重要，因为它和语言是紧密结合的，例如在 C# 中 using 块结束时会自动调用相关对象的`Dispose`方法。
 
 下面是 Dispose 模式的模板:
 
 ```csharp
-public class MyDisposable : IDisposable{
+public class MyDisposable : IDisposable
+{
     // 注意: Finalizer 通常是不需要的
     ~MyDisposable()
     {
         Dispose(false);
     }
-    public void Dispose()    {
-    	 // 调用 Dispose 重载，传入 true        Dispose(true);        GC.SuppressFinalize(this);    }    protected virtual void Dispose(bool disposing)    {
-        // 清理操作    }}
+
+    public void Dispose()
+    {
+    	 // 调用 Dispose 重载，传入 true
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        // 清理操作
+    }
+}
 ```
 
 1. 开发人员手工调用`Dispose`时，调用的是第一个公开的`Dispose`方法，它转而调用`protected`的`Dispose`重载，并传入`disposing = true`，表示是手工调用`Dispose`。如果是 Finalizer 在调用`Dispose`重载，则传入`disposing = false`。所有的清理逻辑都应当写在`protected`的`Dispose`重载中，并通过`disposing`参数来判断`Dispose`是什么时候被调用的 (这很重要，后面再说);
@@ -46,8 +57,16 @@ public class MyDisposable : IDisposable{
 Dispose 模式中第二个`Dispose`方法被标记为`protected virtual`，所以它注定是要给子类用的，子类需要这样来继承实现了 Dispose 模式的基类:
 
 ```csharp
-public class MyDrivedDisposable : MyDisposable{    protected override void Dispose(bool disposing)    {        // 清理操作写在这里
-        // 再调用 base.Dispose(disposing)        base.Dispose(disposing);    }}```
+public class MyDrivedDisposable : MyDisposable
+{
+    protected override void Dispose(bool disposing)
+    {
+        // 清理操作写在这里
+        // 再调用 base.Dispose(disposing)
+        base.Dispose(disposing);
+    }
+}
+```
 
 注意重写`Dispose`方法时，要在末尾调用`base.Dispose(disposing)`，以保证父类的清理代码可以执行，并且这个调用要放在方法的末尾，因为子类的清理代码可能还会用到父类中的相关资源，要保证子类使用完相关资源后才能对父类进行清理。
 
@@ -116,7 +135,12 @@ Finalizer 难写的一个主要原因在于它执行的无序性，我们很容�
 ```csharp
 var stream = new FileStream("C:\\Work\\temp.txt", 
     FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096);
-    var bytes = Encoding.ASCII.GetBytes("Hello World");stream.Write(bytes, 0, bytes.Length);GC.Collect();GC.WaitForPendingFinalizers();
+    
+var bytes = Encoding.ASCII.GetBytes("Hello World");
+stream.Write(bytes, 0, bytes.Length);
+
+GC.Collect();
+GC.WaitForPendingFinalizers();
 ```
 
 这里我特意不调用`Dispose`，因为我要模拟忘记调用`Dispose`的场景。`FileStream`指定了 4KB 的缓冲，而我们要写入的"Hello World"显然远不足 4KB，代码的最后我们强制执行 GC，并等待 Finalizer 执行完毕，然后退出程序。
@@ -127,7 +151,13 @@ var stream = new FileStream("C:\\Work\\temp.txt",
 
 ```csharp
 var stream = new FileStream("C:\\Work\\temp.txt", 
-    FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096);var writer = new StreamWriter(stream, Encoding.ASCII);writer.Write("Hello World");GC.Collect();GC.WaitForPendingFinalizers();```
+    FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096);
+var writer = new StreamWriter(stream, Encoding.ASCII);
+writer.Write("Hello World");
+
+GC.Collect();
+GC.WaitForPendingFinalizers();
+```
 
 如果执行上面的代码，我们会惊奇地发现"Hello World"并没有写入到磁盘，而如果我们显式添加一行`writer.Dispose()`的调用，它竟然又会如期写入磁盘，这可真是...
 
@@ -142,7 +172,18 @@ var stream = new FileStream("C:\\Work\\temp.txt",
 `CriticalFinalizerObject`是一个超级简单的抽象类，它的源码如下:
 
 ```csharp
-public abstract class CriticalFinalizerObject{    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]    protected CriticalFinalizerObject()    {    }    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]    ~CriticalFinalizerObject()    {    }}
+public abstract class CriticalFinalizerObject
+{
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
+    protected CriticalFinalizerObject()
+    {
+    }
+
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    ~CriticalFinalizerObject()
+    {
+    }
+}
 ```
 
 虽然简单，但 CLR 却对它有特殊照顾，这实际上涉及到了 CER (Constrained Execution Region)，这也是个我们平常几乎用不到的东西，只有在编写可靠性要求极高的代码时才可能用到，本文不对其进行探讨。

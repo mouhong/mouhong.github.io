@@ -4,7 +4,7 @@ title: C#中的协变与逆变(续)
 tags: Covariance, Contravariance
 ---
 
-有同学反馈[上一篇关于协变与逆变](/covariance-and-contravariance/)的文章不好理解，所以本文换个角度来说明。
+有同学反馈[上一篇关于协变与逆变](/2015/05/10/covariance-and-contravariance/)的文章不好理解，所以本文换个角度来说明。
 
 ## 一切都是为了"类型安全" ##
 
